@@ -1,4 +1,5 @@
 import type { Question } from "@/types";
+import { FEED_DISPLAY_LIMIT } from "./feed-config";
 
 export type FeedBadge =
   | "trending"
@@ -126,6 +127,15 @@ export function sortQuestionsByEngagement<T extends Question>(
   signalsMap: FeedSignalsMap,
 ): T[] {
   return [...questions].sort((a, b) => compareByEngagement(a, b, signalsMap));
+}
+
+/** Top questions by engagement (responses × 10 + upvotes). */
+export function orderFeedByEngagement<T extends Question>(
+  questions: T[],
+  signalsMap: FeedSignalsMap,
+  limit = FEED_DISPLAY_LIMIT,
+): T[] {
+  return sortQuestionsByEngagement(questions, signalsMap).slice(0, limit);
 }
 
 export const BADGE_STYLES: Record<

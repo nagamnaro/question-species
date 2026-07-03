@@ -1,11 +1,12 @@
 import { FeedLayout } from "@/components/layout/FeedLayout";
 import {
   buildEchoProfileForUser,
-  diversifyFeedOrder,
-  diversifySpeciesFeedOrder,
   enrichSignalsWithAntiEcho,
 } from "@/features/questions/anti-echo";
-import { buildFeedSignalsMap } from "@/features/questions/feed-signals";
+import {
+  buildFeedSignalsMap,
+  orderFeedByEngagement,
+} from "@/features/questions/feed-signals";
 import { enrichQuestionsForFeed } from "@/features/questions/enrich-feed";
 import { QuestionFeed } from "@/features/questions/QuestionFeed";
 import {
@@ -36,49 +37,51 @@ export default async function Home({ searchParams }: HomeProps) {
   const questionIds = rawQuestions.map((question) => question.id);
   const followingIds = userId ? await getFollowingIds(userId) : [];
 
-  const [
-    enrichedQuestions,
-    upvotedQuestionIds,
-    statsRows,
-    insightClusters,
-    echoProfile,
-  ] = await Promise.all([
-    enrichQuestionsForFeed(rawQuestions),
-    userId
-      ? getUserUpvotedQuestionIds(userId, questionIds)
-      : Promise.resolve(new Set<string>()),
-    getFeedSocialStats(questionIds, followingIds),
-    getQuestionInsightsBatch(questionIds),
-    userId ? buildEchoProfileForUser(userId) : Promise.resolve(null),
-  ]);
-
+  const statsRows = await getFeedSocialStats(questionIds, followingIds);
   const baseSignals = buildFeedSignalsMap(
-    enrichedQuestions,
+    rawQuestions,
     statsRows,
     followingIds.length,
   );
 
+  const topQuestions = orderFeedByEngagement(rawQuestions, baseSignals);
+  const topQuestionIds = topQuestions.map((question) => question.id);
+  const topIdSet = new Set(topQuestionIds);
+  const topStatsRows = statsRows.filter((row) => topIdSet.has(row.question_id));
+
+  const [
+    enrichedQuestions,
+    upvotedQuestionIds,
+    insightClusters,
+    echoProfile,
+  ] = await Promise.all([
+    enrichQuestionsForFeed(topQuestions),
+    userId
+      ? getUserUpvotedQuestionIds(userId, topQuestionIds)
+      : Promise.resolve(new Set<string>()),
+    getQuestionInsightsBatch(topQuestionIds),
+    userId ? buildEchoProfileForUser(userId) : Promise.resolve(null),
+  ]);
+
   const feedSignals = enrichSignalsWithAntiEcho(
     enrichedQuestions,
-    baseSignals,
+    buildFeedSignalsMap(
+      enrichedQuestions,
+      topStatsRows,
+      followingIds.length,
+    ),
     insightClusters,
     echoProfile,
   );
 
-  const questions =
-    activeFilter === "all"
-      ? diversifyFeedOrder(enrichedQuestions, feedSignals, echoProfile)
-      : diversifySpeciesFeedOrder(enrichedQuestions, feedSignals, echoProfile);
-
   return (
     <FeedLayout>
       <QuestionFeed
-        questions={questions}
+        questions={enrichedQuestions}
         activeFilter={activeFilter}
         feedSignals={feedSignals}
         isAuthenticated={userId !== null}
         upvotedQuestionIds={upvotedQuestionIds}
-        showAntiEchoNote={activeFilter === "all"}
       />
     </FeedLayout>
   );

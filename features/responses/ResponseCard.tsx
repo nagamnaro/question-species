@@ -20,6 +20,7 @@ import type {
   ReasoningSnippet,
 } from "./social-queries";
 import { FriendReasoningPanel } from "./FriendReasoningPanel";
+import { ReplyUpvoteButton } from "./ReplyUpvoteButton";
 
 interface ResponseCardProps {
   question: Question;
@@ -144,6 +145,8 @@ export function ResponseCard({
           userId: currentUserId,
           displayName: "You",
           createdAt: new Date().toISOString(),
+          upvotes: 0,
+          hasUpvoted: false,
         },
       ]);
       setReplyText("");
@@ -415,15 +418,26 @@ export function ResponseCard({
           {replies.map((reply) => (
             <li
               key={reply.id}
-              className="rounded-lg bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-800/50"
+              className="flex items-start gap-2 rounded-lg bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-800/50"
             >
-              <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                {reply.displayName}
-              </span>
-              <span className="text-zinc-600 dark:text-zinc-400">
-                {" — "}
-                {reply.text}
-              </span>
+              <div className="min-w-0 flex-1">
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                  {reply.displayName}
+                </span>
+                <span className="text-zinc-600 dark:text-zinc-400">
+                  {" — "}
+                  {reply.text}
+                </span>
+              </div>
+              {!reply.id.startsWith("optimistic-") && (
+                <ReplyUpvoteButton
+                  replyId={reply.id}
+                  questionId={question.id}
+                  initialUpvotes={reply.upvotes}
+                  initialUpvoted={reply.hasUpvoted}
+                  isAuthenticated={Boolean(currentUserId)}
+                />
+              )}
             </li>
           ))}
         </ul>

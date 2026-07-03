@@ -1,9 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Question, Species } from "@/types";
-import {
-  FEED_CANDIDATE_LIMIT,
-  FEED_DISPLAY_LIMIT,
-} from "./feed-config";
 
 const SPECIES_VALUES: Species[] = [
   "puzzle",
@@ -26,14 +22,7 @@ export async function getQuestions(
   let query = supabase.from("questions").select("*");
 
   if (species) {
-    query = query
-      .eq("species", species)
-      .order("upvotes", { ascending: false })
-      .limit(FEED_DISPLAY_LIMIT);
-  } else {
-    query = query
-      .order("upvotes", { ascending: false })
-      .limit(FEED_CANDIDATE_LIMIT);
+    query = query.eq("species", species);
   }
 
   const { data, error } = await query;
@@ -43,13 +32,7 @@ export async function getQuestions(
     return [];
   }
 
-  const questions = data ?? [];
-
-  if (!species) {
-    return questions.slice(0, FEED_DISPLAY_LIMIT);
-  }
-
-  return questions;
+  return data ?? [];
 }
 
 export interface FeedSocialStatsRow {

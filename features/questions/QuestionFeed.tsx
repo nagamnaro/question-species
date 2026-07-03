@@ -1,7 +1,6 @@
-import Link from "next/link";
 import type { EnrichedQuestion } from "./enrich-feed";
 import type { FeedSignalsMap } from "./feed-signals";
-import { QuestionCard } from "./QuestionCard";
+import { QuestionFeedList } from "./QuestionFeedList";
 import { SpeciesTabs, type SpeciesFilter } from "./SpeciesTabs";
 import { getSpeciesStyle } from "./species-styles";
 
@@ -11,7 +10,6 @@ interface QuestionFeedProps {
   feedSignals: FeedSignalsMap;
   isAuthenticated: boolean;
   upvotedQuestionIds: Set<string>;
-  showAntiEchoNote?: boolean;
 }
 
 export function QuestionFeed({
@@ -20,7 +18,6 @@ export function QuestionFeed({
   feedSignals,
   isAuthenticated,
   upvotedQuestionIds,
-  showAntiEchoNote = false,
 }: QuestionFeedProps) {
   const activeStyle =
     activeFilter !== "all" ? getSpeciesStyle(activeFilter) : null;
@@ -46,49 +43,13 @@ export function QuestionFeed({
 
       <SpeciesTabs active={activeFilter} />
 
-      {isAuthenticated && (
-        <Link
-          href="/submit"
-          className="flex items-center justify-between rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-3 text-sm transition-colors hover:bg-teal-100 dark:border-teal-900 dark:bg-teal-950/40 dark:hover:bg-teal-950/60"
-        >
-          <span className="font-medium text-teal-900 dark:text-teal-200">
-            + Submit a question
-          </span>
-          <span className="text-teal-700 dark:text-teal-400">Community →</span>
-        </Link>
-      )}
-
-      {showAntiEchoNote && (
-        <p className="rounded-xl border border-cyan-200 bg-cyan-50/70 px-4 py-3 text-xs text-cyan-900 dark:border-cyan-900 dark:bg-cyan-950/30 dark:text-cyan-200">
-          Anti-echo feed mixes in questions with opposing views and species
-          outside your usual patterns.
-        </p>
-      )}
-
-      {questions.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-zinc-300 px-6 py-12 text-center dark:border-zinc-700">
-          <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-            No questions yet
-          </p>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            {activeFilter === "all"
-              ? "Run the database migrations to seed starter questions."
-              : `No ${activeFilter} questions found. Try another species.`}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {questions.map((question) => (
-            <QuestionCard
-              key={question.id}
-              question={question}
-              signals={feedSignals[question.id]}
-              isAuthenticated={isAuthenticated}
-              hasUpvoted={upvotedQuestionIds.has(question.id)}
-            />
-          ))}
-        </div>
-      )}
+      <QuestionFeedList
+        questions={questions}
+        activeFilter={activeFilter}
+        feedSignals={feedSignals}
+        isAuthenticated={isAuthenticated}
+        upvotedQuestionIds={upvotedQuestionIds}
+      />
     </div>
   );
 }

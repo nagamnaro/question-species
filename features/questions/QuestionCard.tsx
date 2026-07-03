@@ -55,15 +55,6 @@ export function QuestionCard({
             <p className="text-base font-semibold leading-snug text-zinc-900 transition-colors group-hover:text-zinc-700 dark:text-zinc-50 dark:group-hover:text-zinc-200">
               {question.text}
             </p>
-
-            {signals && signals.opposingClusters.length >= 2 && (
-              <p className="mt-2 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                <span className="font-semibold text-zinc-700 dark:text-zinc-300">
-                  Opposing views:
-                </span>{" "}
-                {signals.opposingClusters.join(" · ")}
-              </p>
-            )}
           </Link>
 
           <div

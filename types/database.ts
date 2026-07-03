@@ -303,12 +303,46 @@ export interface Database {
           },
         ];
       };
+      response_reply_upvotes: {
+        Row: {
+          user_id: string;
+          reply_id: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          reply_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          reply_id?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "response_reply_upvotes_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "response_reply_upvotes_reply_id_fkey";
+            columns: ["reply_id"];
+            isOneToOne: false;
+            referencedRelation: "response_replies";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       response_replies: {
         Row: {
           id: string;
           response_id: string;
           user_id: string;
           text: string;
+          upvotes: number;
           created_at: string;
         };
         Insert: {
@@ -316,6 +350,7 @@ export interface Database {
           response_id: string;
           user_id: string;
           text: string;
+          upvotes?: number;
           created_at?: string;
         };
         Update: {
@@ -323,6 +358,7 @@ export interface Database {
           response_id?: string;
           user_id?: string;
           text?: string;
+          upvotes?: number;
           created_at?: string;
         };
         Relationships: [
@@ -437,6 +473,10 @@ export interface Database {
       };
       toggle_question_upvote: {
         Args: { p_question_id: string };
+        Returns: { upvoted: boolean; upvotes: number }[];
+      };
+      toggle_response_reply_upvote: {
+        Args: { p_reply_id: string };
         Returns: { upvoted: boolean; upvotes: number }[];
       };
       upsert_question_insight: {

@@ -2,7 +2,7 @@
 
 Apply all migrations **in timestamp order** via Supabase SQL Editor or `supabase db push`.
 
-## Checklist (21 files)
+## Checklist (22 files)
 
 | # | File | Unlocks |
 |---|------|---------|
@@ -27,6 +27,7 @@ Apply all migrations **in timestamp order** via Supabase SQL Editor or `supabase
 | 19 | `20260307201000_user_thinking_tags.sql` | AI thinking tags cache |
 | 20 | `20260307202000_seed_more_questions.sql` | +50 questions |
 | 21 | `20260307203000_sync_upvote_counts.sql` | Reset fake seed upvotes to real counts |
+| 22 | `20260307204000_response_reply_upvotes.sql` | Upvotes on public replies |
 
 ## Verify RPCs exist
 
@@ -41,6 +42,7 @@ WHERE proname IN (
   'get_feed_social_stats',
   'get_user_thinking_stats',
   'toggle_question_upvote',
+  'toggle_response_reply_upvote',
   'upsert_question_insight',
   'get_shared_question_link',
   'get_response_reaction_counts'
@@ -56,7 +58,7 @@ WHERE schemaname = 'public'
   AND tablename IN (
     'users', 'questions', 'responses', 'friendships',
     'question_insights', 'question_upvotes',
-    'response_reactions', 'response_replies',
+    'response_reactions', 'response_replies', 'response_reply_upvotes',
     'response_private_messages'
   )
 ORDER BY tablename;
