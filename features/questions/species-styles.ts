@@ -126,6 +126,17 @@ export function getSpeciesStyle(species: Species): SpeciesStyle {
   return SPECIES_STYLES[species];
 }
 
+/** Intro banner on the home feed (all-tab hero). */
+export const FEED_HERO_STYLE = {
+  emoji: "🧠",
+  accent: "bg-teal-500 dark:bg-teal-400",
+  card:
+    "border-teal-200/90 bg-gradient-to-br from-teal-50/95 via-white to-teal-50/70 dark:border-teal-800/70 dark:from-teal-950/55 dark:via-zinc-900 dark:to-teal-950/45",
+  icon: "bg-teal-100 text-teal-800 dark:bg-teal-900/70 dark:text-teal-200",
+  ring: "ring-teal-200 dark:ring-teal-800",
+  muted: "text-teal-900 dark:text-teal-100",
+} as const;
+
 export const ALL_SPECIES = Object.keys(SPECIES_STYLES) as Species[];
 
 export const SPECIES_META = ALL_SPECIES.map((id) => ({

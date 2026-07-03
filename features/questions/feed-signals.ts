@@ -111,6 +111,33 @@ export function engagementScore(
   return responses * 10 + upvotes;
 }
 
+export function hasFeedEngagement(
+  question: Question,
+  signals: QuestionFeedSignals | undefined,
+): boolean {
+  return engagementScore(question, signals) > 0;
+}
+
+/** Community-submitted vs seeded stock questions. */
+export function isCommunityQuestion(question: Question): boolean {
+  return question.created_by !== null;
+}
+
+/** Stable pseudo-random key for shuffle (consistent within a session). */
+function pseudoRandomKey(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
+function shuffleByPseudoRandom<T extends Question>(questions: T[]): T[] {
+  return [...questions].sort(
+    (a, b) => pseudoRandomKey(a.id) - pseudoRandomKey(b.id),
+  );
+}
+
 export function compareByEngagement<T extends Question>(
   a: T,
   b: T,
@@ -129,13 +156,37 @@ export function sortQuestionsByEngagement<T extends Question>(
   return [...questions].sort((a, b) => compareByEngagement(a, b, signalsMap));
 }
 
-/** Top questions by engagement (responses × 10 + upvotes). */
-export function orderFeedByEngagement<T extends Question>(
+/**
+ * Feed order:
+ * 1. Questions with engagement (responses/upvotes), highest first
+ * 2. Community-submitted with no engagement, shuffled
+ * 3. Stock/seed with no engagement, shuffled
+ */
+export function orderFeedQuestions<T extends Question>(
   questions: T[],
   signalsMap: FeedSignalsMap,
   limit = FEED_DISPLAY_LIMIT,
 ): T[] {
-  return sortQuestionsByEngagement(questions, signalsMap).slice(0, limit);
+  const engaged: T[] = [];
+  const communityIdle: T[] = [];
+  const stockIdle: T[] = [];
+
+  for (const question of questions) {
+    const signals = signalsMap[question.id];
+    if (hasFeedEngagement(question, signals)) {
+      engaged.push(question);
+    } else if (isCommunityQuestion(question)) {
+      communityIdle.push(question);
+    } else {
+      stockIdle.push(question);
+    }
+  }
+
+  return [
+    ...sortQuestionsByEngagement(engaged, signalsMap),
+    ...shuffleByPseudoRandom(communityIdle),
+    ...shuffleByPseudoRandom(stockIdle),
+  ].slice(0, limit);
 }
 
 export const BADGE_STYLES: Record<

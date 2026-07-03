@@ -2,7 +2,8 @@ import type { EnrichedQuestion } from "./enrich-feed";
 import type { FeedSignalsMap } from "./feed-signals";
 import { QuestionFeedList } from "./QuestionFeedList";
 import { SpeciesTabs, type SpeciesFilter } from "./SpeciesTabs";
-import { getSpeciesStyle } from "./species-styles";
+import { SpeciesIcon } from "./SpeciesBadge";
+import { FEED_HERO_STYLE, getSpeciesStyle } from "./species-styles";
 
 interface QuestionFeedProps {
   questions: EnrichedQuestion[];
@@ -19,26 +20,53 @@ export function QuestionFeed({
   isAuthenticated,
   upvotedQuestionIds,
 }: QuestionFeedProps) {
-  const activeStyle =
+  const speciesStyle =
     activeFilter !== "all" ? getSpeciesStyle(activeFilter) : null;
+  const hero = FEED_HERO_STYLE;
 
   return (
     <div className="space-y-6">
-      <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white px-5 py-6 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950">
-        <div className="absolute -right-4 -top-4 text-6xl opacity-20" aria-hidden="true">
-          🧠
+      <div className="relative w-full overflow-hidden rounded-2xl">
+        <div
+          className={`absolute left-0 top-0 z-10 h-full w-2 opacity-95 ${
+            speciesStyle?.accent ?? hero.accent
+          }`}
+          aria-hidden="true"
+        />
+
+        <div
+          className={`rounded-2xl border p-5 pl-8 shadow-md ${
+            speciesStyle?.card ?? hero.card
+          }`}
+        >
+          <div className="flex gap-4">
+            {activeFilter !== "all" ? (
+              <SpeciesIcon species={activeFilter} size="md" />
+            ) : (
+              <div
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-xl ring-2 ${hero.icon} ${hero.ring}`}
+                aria-hidden="true"
+              >
+                {hero.emoji}
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1">
+              <p
+                className={`text-base font-semibold leading-snug ${
+                  speciesStyle?.muted ?? hero.muted
+                }`}
+              >
+                Pick a question, weigh in, and see where you stand
+              </p>
+              {speciesStyle && (
+                <p className={`mt-2 text-sm font-medium ${speciesStyle.muted}`}>
+                  {speciesStyle.emoji} Browsing {speciesStyle.label} questions
+                </p>
+              )}
+            </div>
+          </div>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Question Feed
-        </h1>
-        <p className="mt-1 max-w-sm text-sm text-zinc-600 dark:text-zinc-400">
-          Pick a species. Answer first. Then see how minds compare.
-        </p>
-        {activeStyle && (
-          <p className={`mt-3 text-sm font-semibold ${activeStyle.muted}`}>
-            {activeStyle.emoji} Browsing {activeStyle.label} questions
-          </p>
-        )}
       </div>
 
       <SpeciesTabs active={activeFilter} />

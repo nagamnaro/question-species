@@ -5,7 +5,7 @@ import {
 } from "@/features/questions/anti-echo";
 import {
   buildFeedSignalsMap,
-  orderFeedByEngagement,
+  orderFeedQuestions,
 } from "@/features/questions/feed-signals";
 import { enrichQuestionsForFeed } from "@/features/questions/enrich-feed";
 import { QuestionFeed } from "@/features/questions/QuestionFeed";
@@ -44,7 +44,7 @@ export default async function Home({ searchParams }: HomeProps) {
     followingIds.length,
   );
 
-  const topQuestions = orderFeedByEngagement(rawQuestions, baseSignals);
+  const topQuestions = orderFeedQuestions(rawQuestions, baseSignals);
   const topQuestionIds = topQuestions.map((question) => question.id);
   const topIdSet = new Set(topQuestionIds);
   const topStatsRows = statsRows.filter((row) => topIdSet.has(row.question_id));
