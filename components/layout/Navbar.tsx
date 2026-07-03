@@ -37,7 +37,7 @@ function MessagesLink() {
   return (
     <Link
       href="/messages"
-      className="relative text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+      className="text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
     >
       Messages
       {unreadCount > 0 && (
@@ -48,6 +48,9 @@ function MessagesLink() {
     </Link>
   );
 }
+
+const navLinkClass =
+  "text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50";
 
 export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
@@ -76,48 +79,35 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)] dark:border-zinc-800 dark:bg-zinc-950/80">
-      <div className="mx-auto flex max-w-2xl flex-col gap-2 px-4 py-3 sm:h-14 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-0">
-        <Link
-          href="/"
-          className="shrink-0 text-base font-semibold tracking-tight text-zinc-900 sm:text-lg dark:text-zinc-50"
-        >
-          Question Species
-        </Link>
-
-        <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm sm:flex-nowrap sm:justify-end sm:gap-4">
+      <div className="mx-auto max-w-2xl px-4 py-3 text-center sm:py-4">
+        <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+          <div aria-hidden="true" />
           <Link
             href="/"
-            className="text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
+            className="text-base font-semibold tracking-tight text-zinc-900 sm:text-lg dark:text-zinc-50"
           >
+            Question Species
+          </Link>
+          <div className="flex justify-end">{user ? <StreakBadge /> : null}</div>
+        </div>
+
+        <nav className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm sm:mt-3">
+          <Link href="/" className={navLinkClass}>
             Feed
           </Link>
           {user ? (
             <>
-              <Link
-                href="/mind-match"
-                className="text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
-              >
+              <Link href="/mind-match" className={navLinkClass}>
                 Mind Match
               </Link>
-              <Link
-                href="/submit"
-                className="text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
-              >
+              <Link href="/submit" className={navLinkClass}>
                 Submit
               </Link>
               <MessagesLink />
-              <StreakBadge />
-              <Link
-                href={`/profile/${user.id}`}
-                className="text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
-              >
+              <Link href={`/profile/${user.id}`} className={navLinkClass}>
                 Profile
               </Link>
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
-              >
+              <button type="button" onClick={handleSignOut} className={navLinkClass}>
                 Sign out
               </button>
             </>
