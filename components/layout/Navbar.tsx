@@ -84,7 +84,7 @@ export function Navbar() {
           <div aria-hidden="true" />
           <Link
             href="/"
-            className="text-base font-semibold tracking-tight text-zinc-900 sm:text-lg dark:text-zinc-50"
+            className="text-2xl font-extralight uppercase leading-none tracking-[0.14em] text-zinc-900 sm:text-3xl sm:tracking-[0.16em] dark:text-zinc-50"
           >
             Question Species
           </Link>
