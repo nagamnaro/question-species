@@ -31,36 +31,6 @@ function percentile75(values: number[]): number {
   return sorted[Math.min(index, sorted.length - 1)] ?? 0;
 }
 
-function computeBadges(
-  question: Question,
-  responseCount: number,
-  stats: ResponseStats,
-): FeedBadge[] {
-  const badges: FeedBadge[] = [];
-
-  if (question.upvotes >= 100 && responseCount >= 3) {
-    badges.push("popular");
-  }
-
-  const trendingThreshold = Math.max(5, stats.p75Responses);
-  if (
-    responseCount >= trendingThreshold &&
-    (responseCount >= 8 || question.upvotes >= 200)
-  ) {
-    badges.push("trending");
-  }
-
-  if (
-    responseCount >= 4 &&
-    responseCount >= trendingThreshold &&
-    question.upvotes < 80
-  ) {
-    badges.push("controversial");
-  }
-
-  return badges;
-}
-
 export function buildFeedSignalsMap(
   questions: Question[],
   rows: {
@@ -98,6 +68,64 @@ export function buildFeedSignalsMap(
   }
 
   return result;
+}
+
+function computeBadges(
+  question: Question,
+  responseCount: number,
+  stats: ResponseStats,
+): FeedBadge[] {
+  const badges: FeedBadge[] = [];
+
+  if (question.upvotes >= 100 && responseCount >= 3) {
+    badges.push("popular");
+  }
+
+  const trendingThreshold = Math.max(5, stats.p75Responses);
+  if (
+    responseCount >= trendingThreshold &&
+    (responseCount >= 8 || question.upvotes >= 200)
+  ) {
+    badges.push("trending");
+  }
+
+  if (
+    responseCount >= 4 &&
+    responseCount >= trendingThreshold &&
+    question.upvotes < 80
+  ) {
+    badges.push("controversial");
+  }
+
+  return badges;
+}
+
+/** Higher = more engagement. Answers weighted above upvotes. */
+export function engagementScore(
+  question: Question,
+  signals: QuestionFeedSignals | undefined,
+): number {
+  const responses = signals?.responseCount ?? 0;
+  const upvotes = question.upvotes ?? 0;
+  return responses * 10 + upvotes;
+}
+
+export function compareByEngagement<T extends Question>(
+  a: T,
+  b: T,
+  signalsMap: FeedSignalsMap,
+): number {
+  return (
+    engagementScore(b, signalsMap[b.id]) -
+    engagementScore(a, signalsMap[a.id])
+  );
+}
+
+export function sortQuestionsByEngagement<T extends Question>(
+  questions: T[],
+  signalsMap: FeedSignalsMap,
+): T[] {
+  return [...questions].sort((a, b) => compareByEngagement(a, b, signalsMap));
 }
 
 export const BADGE_STYLES: Record<

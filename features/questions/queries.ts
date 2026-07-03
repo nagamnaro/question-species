@@ -18,15 +18,6 @@ export function parseSpeciesFilter(value?: string): Species | null {
   return SPECIES_VALUES.includes(value as Species) ? (value as Species) : null;
 }
 
-function shuffleQuestions<T>(items: T[]): T[] {
-  const shuffled = [...items];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
-
 export async function getQuestions(
   species?: Species | null,
 ): Promise<Question[]> {
@@ -37,11 +28,11 @@ export async function getQuestions(
   if (species) {
     query = query
       .eq("species", species)
-      .order("created_at", { ascending: false })
+      .order("upvotes", { ascending: false })
       .limit(FEED_DISPLAY_LIMIT);
   } else {
     query = query
-      .order("created_at", { ascending: false })
+      .order("upvotes", { ascending: false })
       .limit(FEED_CANDIDATE_LIMIT);
   }
 
@@ -55,7 +46,7 @@ export async function getQuestions(
   const questions = data ?? [];
 
   if (!species) {
-    return shuffleQuestions(questions).slice(0, FEED_DISPLAY_LIMIT);
+    return questions.slice(0, FEED_DISPLAY_LIMIT);
   }
 
   return questions;

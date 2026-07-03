@@ -40,6 +40,7 @@ export function QuestionCard({
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <SpeciesBadge species={question.species} />
             {question.author && <SubmittedByLink author={question.author} />}
+            <ResponseCountBadge count={signals?.responseCount ?? 0} />
             {signals?.badges.map((badge) => (
               <span
                 key={badge}
@@ -75,12 +76,6 @@ export function QuestionCard({
               isAuthenticated={isAuthenticated}
               size="sm"
             />
-            {signals && signals.responseCount > 0 && (
-              <>
-                <span className="text-zinc-300 dark:text-zinc-600">·</span>
-                <span>{signals.responseCount} responses</span>
-              </>
-            )}
             {isAuthenticated &&
               signals !== undefined &&
               signals.friendsAnsweredPercent !== null && (
@@ -104,6 +99,16 @@ export function QuestionCard({
         </div>
       </div>
     </div>
+  );
+}
+
+function ResponseCountBadge({ count }: { count: number }) {
+  const label = count === 1 ? "1 response" : `${count} responses`;
+
+  return (
+    <span className="inline-flex rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+      {label}
+    </span>
   );
 }
 

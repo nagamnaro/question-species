@@ -7,6 +7,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getResponsesForQuestions } from "@/features/mind-match/queries";
 import { ECHO_PROFILE_SAMPLE_LIMIT } from "./feed-config";
 import type { QuestionFeedSignals } from "./feed-signals";
+import {
+  sortQuestionsByEngagement,
+  type FeedSignalsMap,
+} from "./feed-signals";
 
 const CHALLENGE_SCORE_THRESHOLD = 35;
 const INTERLEAVE_EVERY = 4;
@@ -279,15 +283,6 @@ export function enrichSignalsWithAntiEcho(
   return enriched;
 }
 
-function shuffleQuestions<T>(items: T[]): T[] {
-  const shuffled = [...items];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
-
 export function diversifyFeedOrder<T extends Question>(
   questions: T[],
   signalsMap: Record<string, QuestionFeedSignals>,
@@ -310,13 +305,7 @@ export function diversifyFeedOrder<T extends Question>(
 
   const challengeIds = new Set(challenge.map((q) => q.id));
   const regularPool = unanswered.filter((q) => !challengeIds.has(q.id));
-  const regular = shuffleQuestions(
-    [...regularPool].sort(
-      (a, b) =>
-        (signalsMap[b.id]?.antiEchoScore ?? 0) -
-        (signalsMap[a.id]?.antiEchoScore ?? 0),
-    ),
-  );
+  const regular = sortQuestionsByEngagement(regularPool, signalsMap);
 
   const merged: T[] = [];
   let challengeIndex = 0;
@@ -339,18 +328,27 @@ export function diversifyFeedOrder<T extends Question>(
     }
   }
 
-  return [...merged, ...shuffleQuestions(answered)];
+  return [
+    ...merged,
+    ...sortQuestionsByEngagement(answered, signalsMap),
+  ];
 }
 
 function diversifyFeedOrderAnonymous<T extends Question>(
   questions: T[],
   signalsMap: Record<string, QuestionFeedSignals>,
 ): T[] {
-  const withOpposing = questions.filter(
-    (q) => (signalsMap[q.id]?.opposingClusters.length ?? 0) >= 2,
+  const withOpposing = sortQuestionsByEngagement(
+    questions.filter(
+      (q) => (signalsMap[q.id]?.opposingClusters.length ?? 0) >= 2,
+    ),
+    signalsMap,
   );
   const opposingIds = new Set(withOpposing.map((q) => q.id));
-  const rest = shuffleQuestions(questions.filter((q) => !opposingIds.has(q.id)));
+  const rest = sortQuestionsByEngagement(
+    questions.filter((q) => !opposingIds.has(q.id)),
+    signalsMap,
+  );
 
   const merged: T[] = [];
   let opposingIndex = 0;
@@ -396,14 +394,20 @@ export function diversifySpeciesFeedOrder<T extends Question>(
   if (challenge.length === 0) {
     return profile
       ? [
-          ...unanswered,
-          ...questions.filter((q) => profile.answeredIds.has(q.id)),
+          ...sortQuestionsByEngagement(unanswered, signalsMap),
+          ...sortQuestionsByEngagement(
+            questions.filter((q) => profile.answeredIds.has(q.id)),
+            signalsMap,
+          ),
         ]
-      : questions;
+      : sortQuestionsByEngagement(questions, signalsMap);
   }
 
   const challengeIds = new Set(challenge.map((q) => q.id));
-  const rest = questions.filter((q) => !challengeIds.has(q.id));
+  const rest = sortQuestionsByEngagement(
+    questions.filter((q) => !challengeIds.has(q.id)),
+    signalsMap,
+  );
   const merged = [...rest];
 
   if (challenge[0]) merged.unshift(challenge[0]);
