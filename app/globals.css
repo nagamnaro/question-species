@@ -23,6 +23,55 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* iOS: 16px+ inputs avoid automatic focus zoom */
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/*
+ * Phone portrait: scale layout to a standard phone frame and center it.
+ * --phone-scale is set by MobileViewport.tsx; defaults to 1 on larger screens.
+ */
+:root {
+  --phone-scale: 1;
+  --phone-offset-x: 0px;
+  --phone-offset-y: 0px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
+@media (max-width: 640px) and (orientation: portrait) {
+  body {
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    padding:
+      var(--safe-top)
+      var(--safe-right)
+      var(--safe-bottom)
+      var(--safe-left);
+  }
+
+  #app-shell {
+    width: 390px;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: var(--phone-offset-y);
+    padding-bottom: var(--phone-offset-y);
+    transform: scale(var(--phone-scale));
+    transform-origin: top center;
+  }
 }
 
 @keyframes fade-up {
