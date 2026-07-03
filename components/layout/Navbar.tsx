@@ -76,7 +76,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)] dark:border-zinc-800 dark:bg-zinc-950/80">
-      <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-3 px-4">
+      <div className="mx-auto flex max-w-2xl flex-col gap-2 px-4 py-3 sm:h-14 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:py-0">
         <Link
           href="/"
           className="shrink-0 text-base font-semibold tracking-tight text-zinc-900 sm:text-lg dark:text-zinc-50"
@@ -84,7 +84,7 @@ export function Navbar() {
           Question Species
         </Link>
 
-        <nav className="-mr-2 flex max-w-[62%] items-center gap-3 overflow-x-auto overscroll-x-contain whitespace-nowrap text-sm sm:max-w-none sm:gap-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm sm:flex-nowrap sm:justify-end sm:gap-4">
           <Link
             href="/"
             className="text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
