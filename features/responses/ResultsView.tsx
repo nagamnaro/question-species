@@ -48,23 +48,15 @@ export function ResultsView({
       </div>
 
       {userResponse && comparison && (
-        <>
-          <div className="reveal-item">
-            <ComparisonSummary
-              question={question}
-              userResponse={userResponse}
-              responses={responses}
-              followingIds={followingIds}
-            />
-          </div>
-          <Suspense fallback={<InsightSummarySkeleton />}>
-            <ResultsInsightsSection
-              question={question}
-              responses={responses}
-              comparison={comparison}
-            />
-          </Suspense>
-        </>
+        <div className="reveal-item">
+          <ComparisonSummary
+            question={question}
+            userResponse={userResponse}
+            responses={responses}
+            followingIds={followingIds}
+            comparison={comparison}
+          />
+        </div>
       )}
 
       {userResponse && (
@@ -106,6 +98,16 @@ export function ResultsView({
       <div className="reveal-item">
         <DistributionChart question={question} responses={responses} />
       </div>
+
+      {userResponse && comparison && (
+        <Suspense fallback={<InsightSummarySkeleton />}>
+          <ResultsInsightsSection
+            question={question}
+            responses={responses}
+            comparison={comparison}
+          />
+        </Suspense>
+      )}
 
       <div className="reveal-item">
         <h2 className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-50">

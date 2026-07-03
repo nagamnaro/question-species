@@ -65,17 +65,45 @@ export function ResponseCard({
   const [privateMessages, setPrivateMessages] = useState(initialPrivateMessages);
   const [replyText, setReplyText] = useState("");
   const [privateText, setPrivateText] = useState("");
-  const [showReplyForm, setShowReplyForm] = useState(false);
-  const [showPrivateForm, setShowPrivateForm] = useState(false);
+  const [publicReplyOpen, setPublicReplyOpen] = useState(false);
+  /** 'answer' = reply to the response; otherwise id of public reply to nest under */
+  const [publicReplyAnchor, setPublicReplyAnchor] = useState<string>("answer");
+  const [privateReplyOpen, setPrivateReplyOpen] = useState(false);
+  /** null = new private note to the answer author; otherwise reply under that message */
+  const [privateReplyToMessageId, setPrivateReplyToMessageId] = useState<
+    string | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  function openPublicReplyForm(anchor: string = "answer") {
+    setPrivateReplyOpen(false);
+    setPrivateReplyToMessageId(null);
+    setPublicReplyAnchor(anchor);
+    setPublicReplyOpen(true);
+  }
+
+  function openPrivateReplyForm(messageId: string | null) {
+    setPublicReplyOpen(false);
+    setPublicReplyAnchor("answer");
+    setPrivateReplyToMessageId(messageId);
+    setPrivateReplyOpen(true);
+  }
+
+  function closeReplyForms() {
+    setPublicReplyOpen(false);
+    setPrivateReplyOpen(false);
+    setPrivateReplyToMessageId(null);
+    setPublicReplyAnchor("answer");
+  }
+
   useEffect(() => {
     if (window.location.hash !== `#response-${response.id}`) return;
-    setShowPrivateForm(true);
+    const lastIncoming = privateMessages.find((message) => !message.isSentByMe);
+    openPrivateReplyForm(lastIncoming?.id ?? null);
     const element = document.getElementById(`response-${response.id}`);
     element?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [response.id]);
+  }, [response.id, privateMessages]);
 
   const alignsWithUser =
     !isOwn &&
@@ -150,7 +178,7 @@ export function ResponseCard({
         },
       ]);
       setReplyText("");
-      setShowReplyForm(false);
+      closeReplyForms();
     });
   }
 
@@ -158,9 +186,7 @@ export function ResponseCard({
     event.preventDefault();
     setError(null);
 
-    const recipientId = isOwn
-      ? privateMessages.find((message) => !message.isSentByMe)?.senderId
-      : response.user_id;
+    const recipientId = privateReplyRecipientId();
 
     if (!recipientId) {
       setError("No one to reply to.");
@@ -200,9 +226,118 @@ export function ResponseCard({
         },
       ]);
       setPrivateText("");
-      setShowPrivateForm(false);
+      closeReplyForms();
     });
   }
+
+  function privateReplyRecipientId(): string | null {
+    if (privateReplyToMessageId) {
+      const target = privateMessages.find(
+        (message) => message.id === privateReplyToMessageId,
+      );
+      if (target) {
+        return target.isSentByMe ? target.recipientId : target.senderId;
+      }
+    }
+
+    if (isOwn) {
+      return privateMessages.find((message) => !message.isSentByMe)?.senderId ?? null;
+    }
+
+    return response.user_id;
+  }
+
+  function privateFormHint(): string {
+    if (privateReplyToMessageId) {
+      const target = privateMessages.find(
+        (message) => message.id === privateReplyToMessageId,
+      );
+      if (target) {
+        return `Replying privately to ${target.isSentByMe ? target.recipientName : target.senderName}. Only you two will see this.`;
+      }
+    }
+
+    if (isOwn) {
+      return "Only you and the other person will see this reply.";
+    }
+
+    return `Only you and ${displayName(response)} will see this note.`;
+  }
+
+  function publicReplyContextLabel(): string {
+    if (publicReplyAnchor === "answer") {
+      return `Replying publicly to ${isOwn ? "your answer" : displayName(response)}`;
+    }
+
+    const target = replies.find((reply) => reply.id === publicReplyAnchor);
+    return target
+      ? `Replying publicly to ${target.displayName}`
+      : "Add to the discussion";
+  }
+
+  const publicReplyForm = publicReplyOpen ? (
+    <form onSubmit={handleReplySubmit} className="mt-2 space-y-2">
+      <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+        {publicReplyContextLabel()}
+      </p>
+      <textarea
+        value={replyText}
+        onChange={(event) => setReplyText(event.target.value)}
+        rows={2}
+        maxLength={500}
+        placeholder="Add to the discussion…"
+        className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+      />
+      <div className="flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={isPending || !replyText.trim()}
+          className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
+        >
+          Post reply
+        </button>
+        <button
+          type="button"
+          onClick={closeReplyForms}
+          className="rounded-lg px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  ) : null;
+
+  const privateReplyForm = privateReplyOpen ? (
+    <form onSubmit={handlePrivateSubmit} className="mt-2 space-y-2">
+      <p className="text-xs text-indigo-700 dark:text-indigo-300">
+        {privateFormHint()}
+      </p>
+      <textarea
+        value={privateText}
+        onChange={(event) => setPrivateText(event.target.value)}
+        rows={2}
+        maxLength={500}
+        placeholder="Ask why they think that, or share a private reaction…"
+        className="w-full rounded-lg border border-indigo-200 bg-indigo-50/30 px-3 py-2 text-sm dark:border-indigo-900 dark:bg-indigo-950/20"
+      />
+      <div className="flex items-center gap-2">
+        <button
+          type="submit"
+          disabled={isPending || !privateText.trim()}
+          className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+        >
+          Send private note
+        </button>
+        <button
+          type="button"
+          onClick={closeReplyForms}
+          className="rounded-lg px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  ) : null;
 
   return (
     <li
@@ -317,14 +452,22 @@ export function ResponseCard({
           </button>
           <button
             type="button"
-            onClick={() => setShowReplyForm((value) => !value)}
+            onClick={() =>
+              publicReplyOpen && publicReplyAnchor === "answer"
+                ? closeReplyForms()
+                : openPublicReplyForm("answer")
+            }
             className="rounded-full px-3 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
           >
             Public reply
           </button>
           <button
             type="button"
-            onClick={() => setShowPrivateForm((value) => !value)}
+            onClick={() =>
+              privateReplyOpen && privateReplyToMessageId === null
+                ? closeReplyForms()
+                : openPrivateReplyForm(null)
+            }
             className="rounded-full px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
           >
             Private note
@@ -340,104 +483,100 @@ export function ResponseCard({
         </p>
       )}
 
+      {!isOwn &&
+        publicReplyOpen &&
+        publicReplyAnchor === "answer" &&
+        publicReplyForm}
+
       {isOwn && privateMessages.some((message) => !message.isSentByMe) && (
         <div className="mt-3 border-t border-indigo-100 pt-3 dark:border-indigo-900/50">
-          <button
-            type="button"
-            onClick={() => setShowPrivateForm((value) => !value)}
-            className="rounded-full px-3 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
-          >
-            Reply privately
-          </button>
-        </div>
-      )}
-
-      {showReplyForm && !isOwn && (
-        <form onSubmit={handleReplySubmit} className="mt-3 space-y-2">
-          <textarea
-            value={replyText}
-            onChange={(event) => setReplyText(event.target.value)}
-            rows={2}
-            maxLength={500}
-            placeholder="Add to the discussion…"
-            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-          />
-          <button
-            type="submit"
-            disabled={isPending || !replyText.trim()}
-            className="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900"
-          >
-            Post reply
-          </button>
-        </form>
-      )}
-
-      {showPrivateForm && (
-        <form onSubmit={handlePrivateSubmit} className="mt-3 space-y-2">
-          <p className="text-xs text-indigo-700 dark:text-indigo-300">
-            {isOwn
-              ? "Only you and the other person will see this reply."
-              : `Only you and ${displayName(response)} will see this note.`}
+          <p className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
+            Private thread
           </p>
-          <textarea
-            value={privateText}
-            onChange={(event) => setPrivateText(event.target.value)}
-            rows={2}
-            maxLength={500}
-            placeholder="Ask why they think that, or share a private reaction…"
-            className="w-full rounded-lg border border-indigo-200 bg-indigo-50/30 px-3 py-2 text-sm dark:border-indigo-900 dark:bg-indigo-950/20"
-          />
-          <button
-            type="submit"
-            disabled={isPending || !privateText.trim()}
-            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
-          >
-            Send private note
-          </button>
-        </form>
+        </div>
       )}
 
       {privateMessages.length > 0 && (
         <ul className="mt-3 space-y-2 border-t border-indigo-100 pt-3 dark:border-indigo-900/50">
           {privateMessages.map((message) => (
-            <li
-              key={message.id}
-              className="rounded-lg border border-indigo-100 bg-indigo-50/40 px-3 py-2 text-sm dark:border-indigo-900/50 dark:bg-indigo-950/20"
-            >
-              <span className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
-                {message.isSentByMe ? "You (private)" : `${message.senderName} (private)`}
-              </span>
-              <p className="mt-1 text-zinc-700 dark:text-zinc-300">{message.body}</p>
+            <li key={message.id}>
+              <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 px-3 py-2 text-sm dark:border-indigo-900/50 dark:bg-indigo-950/20">
+                <span className="text-xs font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300">
+                  {message.isSentByMe
+                    ? "You (private)"
+                    : `${message.senderName} (private)`}
+                </span>
+                <p className="mt-1 text-zinc-700 dark:text-zinc-300">
+                  {message.body}
+                </p>
+                {!message.isSentByMe && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      privateReplyOpen &&
+                      privateReplyToMessageId === message.id
+                        ? closeReplyForms()
+                        : openPrivateReplyForm(message.id)
+                    }
+                    className="mt-2 rounded-full px-2.5 py-0.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100 dark:text-indigo-300 dark:hover:bg-indigo-950/50"
+                  >
+                    Reply privately
+                  </button>
+                )}
+              </div>
+              {privateReplyOpen && privateReplyToMessageId === message.id
+                ? privateReplyForm
+                : null}
             </li>
           ))}
         </ul>
       )}
 
+      {!isOwn &&
+        privateReplyOpen &&
+        privateReplyToMessageId === null &&
+        privateReplyForm}
+
       {replies.length > 0 && (
         <ul className="mt-3 space-y-2 border-t border-zinc-200 pt-3 dark:border-zinc-700">
           {replies.map((reply) => (
-            <li
-              key={reply.id}
-              className="flex items-start gap-2 rounded-lg bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-800/50"
-            >
-              <div className="min-w-0 flex-1">
-                <span className="font-medium text-zinc-900 dark:text-zinc-100">
-                  {reply.displayName}
-                </span>
-                <span className="text-zinc-600 dark:text-zinc-400">
-                  {" — "}
-                  {reply.text}
-                </span>
+            <li key={reply.id}>
+              <div className="flex items-start gap-2 rounded-lg bg-zinc-50 px-3 py-2 text-sm dark:bg-zinc-800/50">
+                <div className="min-w-0 flex-1">
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                    {reply.displayName}
+                  </span>
+                  <span className="text-zinc-600 dark:text-zinc-400">
+                    {" — "}
+                    {reply.text}
+                  </span>
+                  {!isOwn && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        publicReplyOpen && publicReplyAnchor === reply.id
+                          ? closeReplyForms()
+                          : openPublicReplyForm(reply.id)
+                      }
+                      className="mt-2 block rounded-full px-2.5 py-0.5 text-xs font-medium text-zinc-600 hover:bg-zinc-200/80 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                    >
+                      Reply
+                    </button>
+                  )}
+                </div>
+                {!reply.id.startsWith("optimistic-") && (
+                  <ReplyUpvoteButton
+                    replyId={reply.id}
+                    questionId={question.id}
+                    initialUpvotes={reply.upvotes}
+                    initialUpvoted={reply.hasUpvoted}
+                    isAuthenticated={Boolean(currentUserId)}
+                  />
+                )}
               </div>
-              {!reply.id.startsWith("optimistic-") && (
-                <ReplyUpvoteButton
-                  replyId={reply.id}
-                  questionId={question.id}
-                  initialUpvotes={reply.upvotes}
-                  initialUpvoted={reply.hasUpvoted}
-                  isAuthenticated={Boolean(currentUserId)}
-                />
-              )}
+              {publicReplyOpen && publicReplyAnchor === reply.id
+                ? publicReplyForm
+                : null}
             </li>
           ))}
         </ul>

@@ -2,6 +2,22 @@ import type { Question } from "@/types";
 import type { ResponseWithUser } from "./queries";
 import { isNumericStructuredQuestion } from "./structured-answer-format";
 
+export interface DistributionSlice {
+  label: string;
+  count: number;
+  percent: number;
+}
+
+const SLICE_PALETTE = [
+  { fill: "#8b5cf6", legend: "bg-violet-500" },
+  { fill: "#0ea5e9", legend: "bg-sky-500" },
+  { fill: "#10b981", legend: "bg-emerald-500" },
+  { fill: "#f59e0b", legend: "bg-amber-500" },
+  { fill: "#f43f5e", legend: "bg-rose-500" },
+  { fill: "#6366f1", legend: "bg-indigo-500" },
+  { fill: "#a1a1aa", legend: "bg-zinc-400" },
+] as const;
+
 function usesNumericDistribution(question: Question): boolean {
   if (question.species === "estimation") return true;
   if (question.species === "prediction") {
@@ -42,9 +58,22 @@ function buildNumericBuckets(values: number[]): { label: string; count: number }
   return buckets.map(({ label, count }) => ({ label, count }));
 }
 
-function buildTextSummary(
-  responses: ResponseWithUser[],
-): { answer: string; count: number }[] {
+function toPercentSlices(
+  items: { label: string; count: number }[],
+  total: number,
+): DistributionSlice[] {
+  if (total === 0) return [];
+
+  return items
+    .filter((item) => item.count > 0)
+    .map((item) => ({
+      label: item.label,
+      count: item.count,
+      percent: Math.round((item.count / total) * 100),
+    }));
+}
+
+function buildTextSlices(responses: ResponseWithUser[]): DistributionSlice[] {
   const counts = new Map<string, number>();
 
   for (const response of responses) {
@@ -52,10 +81,102 @@ function buildTextSummary(
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
 
-  return [...counts.entries()]
-    .map(([answer, count]) => ({ answer, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+  const total = responses.length;
+  const sorted = [...counts.entries()]
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const maxSlices = 6;
+  const top = sorted.slice(0, maxSlices - 1);
+  const restCount = sorted
+    .slice(maxSlices - 1)
+    .reduce((sum, item) => sum + item.count, 0);
+
+  const items =
+    restCount > 0
+      ? [...top, { label: "Other answers", count: restCount }]
+      : top;
+
+  return toPercentSlices(items, total);
+}
+
+function polarToCartesian(
+  cx: number,
+  cy: number,
+  radius: number,
+  angle: number,
+): { x: number; y: number } {
+  return {
+    x: cx + radius * Math.cos(angle),
+    y: cy + radius * Math.sin(angle),
+  };
+}
+
+function describeSlice(
+  cx: number,
+  cy: number,
+  radius: number,
+  startAngle: number,
+  endAngle: number,
+): string {
+  if (endAngle - startAngle >= Math.PI * 2 - 0.001) {
+    return [
+      `M ${cx} ${cy}`,
+      `m 0 -${radius}`,
+      `a ${radius} ${radius} 0 1 1 0 ${radius * 2}`,
+      `a ${radius} ${radius} 0 1 1 0 -${radius * 2}`,
+      "Z",
+    ].join(" ");
+  }
+
+  const start = polarToCartesian(cx, cy, radius, startAngle);
+  const end = polarToCartesian(cx, cy, radius, endAngle);
+  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+
+  return [
+    `M ${cx} ${cy}`,
+    `L ${start.x} ${start.y}`,
+    `A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y}`,
+    "Z",
+  ].join(" ");
+}
+
+function PieChart({ slices }: { slices: DistributionSlice[] }) {
+  const size = 168;
+  const radius = size / 2 - 4;
+  const cx = size / 2;
+  const cy = size / 2;
+  const total = slices.reduce((sum, slice) => sum + slice.count, 0);
+
+  let angle = -Math.PI / 2;
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className="shrink-0"
+      role="img"
+      aria-label="Answer distribution pie chart"
+    >
+      {slices.map((slice, index) => {
+        const sliceAngle = (slice.count / total) * Math.PI * 2;
+        const startAngle = angle;
+        const endAngle = angle + sliceAngle;
+        angle = endAngle;
+
+        return (
+          <path
+            key={`${slice.label}-${index}`}
+            d={describeSlice(cx, cy, radius, startAngle, endAngle)}
+            fill={SLICE_PALETTE[index % SLICE_PALETTE.length]!.fill}
+            stroke="var(--background, #fff)"
+            strokeWidth={2}
+          />
+        );
+      })}
+    </svg>
+  );
 }
 
 interface DistributionChartProps {
@@ -71,83 +192,58 @@ export function DistributionChart({
     return null;
   }
 
+  let slices: DistributionSlice[] = [];
+
   if (usesNumericDistribution(question)) {
     const values = responses
       .map((response) => parseFloat(response.answer_text))
       .filter((value) => !Number.isNaN(value));
-
-    const buckets = buildNumericBuckets(values);
-    const maxCount = Math.max(...buckets.map((bucket) => bucket.count), 1);
-
-    return (
-      <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-          Answer distribution
-        </h2>
-
-        {values.length > 0 ? (
-          <div className="mt-4 space-y-2">
-            {buckets.map((bucket) => (
-              <div key={bucket.label} className="flex items-center gap-3">
-                <span className="w-16 shrink-0 text-right text-xs text-zinc-500 dark:text-zinc-400">
-                  {bucket.label}
-                </span>
-                <div className="h-5 flex-1 overflow-hidden rounded bg-zinc-100 dark:bg-zinc-800">
-                  <div
-                    className="h-full rounded bg-emerald-500/70 transition-all dark:bg-emerald-400/60"
-                    style={{ width: `${(bucket.count / maxCount) * 100}%` }}
-                  />
-                </div>
-                <span className="w-6 shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
-                  {bucket.count}
-                </span>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">
-            {responses.length} response{responses.length !== 1 ? "s" : ""}{" "}
-            recorded
-          </p>
-        )}
-      </div>
-    );
+    slices = toPercentSlices(buildNumericBuckets(values), values.length);
+  } else {
+    slices = buildTextSlices(responses);
   }
 
-  const summary = buildTextSummary(responses);
-  const topCount = summary[0]?.count ?? 1;
+  if (slices.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+    <div className="rounded-xl border border-sky-200 bg-sky-50 p-5 dark:border-sky-900 dark:bg-sky-950/40">
+      <h2 className="text-sm font-semibold text-sky-800 dark:text-sky-300">
         Answer distribution
       </h2>
+      <p className="mt-0.5 text-xs text-sky-700/80 dark:text-sky-400/80">
+        Share of each answer among {responses.length} response
+        {responses.length !== 1 ? "s" : ""}
+      </p>
 
-      <div className="mt-4 space-y-2">
-        {summary.map((item) => (
-          <div key={item.answer} className="flex items-start gap-3">
-            <div className="mt-1.5 h-2 flex-1 overflow-hidden rounded bg-zinc-100 dark:bg-zinc-800">
-              <div
-                className="h-full rounded bg-sky-500/70 dark:bg-sky-400/60"
-                style={{ width: `${(item.count / topCount) * 100}%` }}
+      <div className="mt-5 flex flex-col items-center gap-6 sm:flex-row sm:items-start">
+        <PieChart slices={slices} />
+
+        <ul className="min-w-0 flex-1 space-y-2.5">
+          {slices.map((slice, index) => (
+            <li key={`${slice.label}-${index}`} className="flex items-start gap-2.5">
+              <span
+                className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${SLICE_PALETTE[index % SLICE_PALETTE.length]!.legend}`}
+                aria-hidden="true"
               />
-            </div>
-            <span className="w-6 shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
-              {item.count}
-            </span>
-          </div>
-        ))}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    {slice.label}
+                  </p>
+                  <span className="shrink-0 text-sm font-semibold text-sky-800 dark:text-sky-300">
+                    {slice.percent}%
+                  </span>
+                </div>
+                <p className="text-xs text-sky-700/70 dark:text-sky-400/70">
+                  {slice.count} response{slice.count !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
-      <ul className="mt-3 space-y-1 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-        {summary.map((item) => (
-          <li
-            key={item.answer}
-            className="truncate text-xs text-zinc-600 dark:text-zinc-400"
-          >
-            {item.answer}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
