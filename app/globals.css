@@ -124,46 +124,26 @@ body {
   }
 }
 
-/* Feed cards: slide content out of the coloured left spine as they scroll into view */
-@keyframes question-card-deal {
-  from {
-    transform: translateX(calc(-100% + 0.375rem));
-    opacity: 0.35;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-@keyframes question-card-spine-pulse {
-  from {
-    width: 0.375rem;
-    opacity: 0.95;
-  }
-  40% {
-    width: 0.5rem;
-    opacity: 1;
-  }
-  to {
-    width: 0.375rem;
-    opacity: 0.9;
-  }
-}
-
+/* Feed cards: card body slides from the static coloured spine on scroll */
 @media (prefers-reduced-motion: no-preference) {
-  [data-deal-ready] .question-card-deal-panel:not(.is-dealt) {
+  [data-deal-ready] .question-card-deal-panel {
     transform: translateX(calc(-100% + 0.375rem));
-    opacity: 0.35;
+    opacity: 0.4;
     will-change: transform, opacity;
   }
 
-  .question-card-deal-panel.is-dealt {
-    animation: question-card-deal 0.58s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  [data-deal-ready] .question-card-deal-panel.is-in-view {
+    transform: translateX(0) translateY(0);
+    opacity: 1;
   }
 
-  .question-card-deck-spine.is-dealt {
-    animation: question-card-spine-pulse 0.58s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  [data-deal-ready] .question-card-deal-panel.is-out-of-view {
+    transform: translateX(calc(-100% + 0.375rem));
+    opacity: 0.4;
+  }
+
+  [data-deal-ready] .group:hover .question-card-deal-panel.is-in-view {
+    transform: translateX(0) translateY(-2px);
   }
 }
 

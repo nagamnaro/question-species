@@ -4,18 +4,18 @@ import { useEffect, useRef, useState } from "react";
 
 interface QuestionCardRevealProps {
   accentClassName: string;
-  className: string;
+  panelClassName: string;
   children: React.ReactNode;
 }
 
 export function QuestionCardReveal({
   accentClassName,
-  className,
+  panelClassName,
   children,
 }: QuestionCardRevealProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [animationReady, setAnimationReady] = useState(false);
-  const [dealt, setDealt] = useState(false);
+  const [inView, setInView] = useState(true);
 
   useEffect(() => {
     const node = rootRef.current;
@@ -26,38 +26,21 @@ export function QuestionCardReveal({
     ).matches;
 
     if (prefersReducedMotion) {
-      setDealt(true);
+      setInView(true);
       setAnimationReady(true);
       return;
     }
 
-    setAnimationReady(true);
-
-    const reveal = () => {
-      setDealt(true);
-      observer.disconnect();
-    };
-
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry?.isIntersecting) reveal();
+        if (!entry) return;
+        setAnimationReady(true);
+        setInView(entry.isIntersecting);
       },
-      { threshold: 0.12, rootMargin: "0px 0px -6% 0px" },
+      { threshold: 0.15, rootMargin: "0px 0px -5% 0px" },
     );
 
     observer.observe(node);
-
-    const rect = node.getBoundingClientRect();
-    const inView =
-      rect.top < window.innerHeight * 0.94 &&
-      rect.bottom > window.innerHeight * 0.06;
-
-    if (inView) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(reveal);
-      });
-    }
-
     return () => observer.disconnect();
   }, []);
 
@@ -65,15 +48,15 @@ export function QuestionCardReveal({
     <div
       ref={rootRef}
       data-deal-ready={animationReady || undefined}
-      className={`group relative overflow-hidden ${className}`}
+      className="group relative w-full overflow-hidden rounded-2xl"
     >
       <div
-        className={`question-card-deck-spine absolute left-0 top-0 z-10 h-full w-1.5 opacity-90 ${accentClassName} ${dealt ? "is-dealt" : ""}`}
+        className={`question-card-deck-spine absolute left-0 top-0 z-10 h-full w-1.5 opacity-90 ${accentClassName}`}
         aria-hidden="true"
       />
 
       <div
-        className={`question-card-deal-panel relative ${dealt ? "is-dealt" : ""}`}
+        className={`question-card-deal-panel ${inView ? "is-in-view" : "is-out-of-view"} ${panelClassName}`}
       >
         {children}
       </div>

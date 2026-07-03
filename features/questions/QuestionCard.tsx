@@ -27,10 +27,10 @@ export function QuestionCard({
 
   return (
     <QuestionCardReveal
-      accentClassName={`${style.accent} transition-all group-hover:w-2`}
-      className={`rounded-2xl border p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${style.card} ${style.cardHover}`}
+      accentClassName={`${style.accent} transition-[width] duration-200 group-hover:w-2`}
+      panelClassName={`rounded-2xl border p-5 pl-7 shadow-sm transition-[transform,opacity,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:shadow-lg ${style.card} ${style.cardHover}`}
     >
-      <div className="flex gap-4 pl-2">
+      <div className="flex gap-4">
         <SpeciesIcon species={question.species} size="md" />
 
         <div className="min-w-0 flex-1">
