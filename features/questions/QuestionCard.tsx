@@ -7,6 +7,7 @@ import {
 import { SpeciesBadge, SpeciesIcon } from "./SpeciesBadge";
 import { SubmittedByLink } from "./SubmittedByLink";
 import { UpvoteButton } from "./UpvoteButton";
+import { QuestionCardReveal } from "./QuestionCardReveal";
 import { getSpeciesStyle } from "./species-styles";
 
 interface QuestionCardProps {
@@ -25,14 +26,10 @@ export function QuestionCard({
   const style = getSpeciesStyle(question.species);
 
   return (
-    <div
-      className={`group relative overflow-hidden rounded-2xl border p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${style.card} ${style.cardHover}`}
+    <QuestionCardReveal
+      accentClassName={`${style.accent} transition-all group-hover:w-2`}
+      className={`rounded-2xl border p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg ${style.card} ${style.cardHover}`}
     >
-      <div
-        className={`absolute left-0 top-0 h-full w-1 ${style.accent} opacity-80 transition-all group-hover:w-1.5`}
-        aria-hidden="true"
-      />
-
       <div className="flex gap-4 pl-2">
         <SpeciesIcon species={question.species} size="md" />
 
@@ -89,7 +86,7 @@ export function QuestionCard({
           </div>
         </div>
       </div>
-    </div>
+    </QuestionCardReveal>
   );
 }
 
