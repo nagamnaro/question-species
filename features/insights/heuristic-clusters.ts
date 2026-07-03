@@ -1,5 +1,5 @@
 import { answersAgree } from "@/features/responses/comparison";
-import { isNumericPredictionQuestion } from "@/features/responses/prediction-format";
+import { isNumericStructuredQuestion } from "@/features/responses/structured-answer-format";
 import type { Question, Species } from "@/types";
 import type { ResponseWithUser } from "@/features/responses/queries";
 import type { InsightPayload, ReasoningCluster } from "./types";
@@ -47,7 +47,8 @@ function clusterTitle(
 
   if (
     species === "estimation" ||
-    (species === "prediction" && isNumericPredictionQuestion(questionText))
+    (species === "prediction" &&
+      isNumericStructuredQuestion(species, questionText))
   ) {
     return `Around ${truncate(representative, 20)}`;
   }

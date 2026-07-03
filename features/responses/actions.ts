@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { validateStructuredAnswer } from "@/features/responses/answer-input";
 import { createClient } from "@/lib/supabase/server";
 
 export interface SubmitResponseInput {
@@ -75,9 +76,20 @@ export async function submitResponse(
 
   const { data: question } = await supabase
     .from("questions")
-    .select("species")
+    .select("species, text")
     .eq("id", input.questionId)
     .maybeSingle();
+
+  if (question) {
+    const validationError = validateStructuredAnswer(
+      question,
+      answerText,
+      input.reasoningText,
+    );
+    if (validationError) {
+      return { success: false, error: validationError };
+    }
+  }
 
   if (question?.species === "prediction" && predictionValue === null) {
     return {

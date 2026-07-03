@@ -1,6 +1,6 @@
 import type { Question, Species } from "@/types";
 import type { ResponseWithUser } from "./queries";
-import { isNumericPredictionQuestion } from "./prediction-format";
+import { isNumericStructuredQuestion } from "./structured-answer-format";
 
 /** Match numeric answers within this range; text answers must match exactly (case-insensitive). */
 const NUMERIC_TOLERANCE = 10;
@@ -20,7 +20,7 @@ function shouldUseNumericComparison(
   if (species !== "prediction") return false;
 
   if (questionText) {
-    return isNumericPredictionQuestion(questionText);
+    return isNumericStructuredQuestion(species, questionText);
   }
 
   const na = parseNumeric(a);

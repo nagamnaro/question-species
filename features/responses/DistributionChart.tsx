@@ -1,11 +1,11 @@
 import type { Question } from "@/types";
 import type { ResponseWithUser } from "./queries";
-import { isNumericPredictionQuestion } from "./prediction-format";
+import { isNumericStructuredQuestion } from "./structured-answer-format";
 
 function usesNumericDistribution(question: Question): boolean {
   if (question.species === "estimation") return true;
   if (question.species === "prediction") {
-    return isNumericPredictionQuestion(question.text);
+    return isNumericStructuredQuestion(question.species, question.text);
   }
   return false;
 }

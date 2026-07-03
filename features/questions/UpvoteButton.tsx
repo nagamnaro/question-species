@@ -25,7 +25,18 @@ export function UpvoteButton({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const iconSize = size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+  const sizeStyles =
+    size === "sm"
+      ? {
+          icon: "h-[21px] w-[21px]",
+          text: "text-lg font-medium",
+          button: "gap-1.5 px-3 py-1",
+        }
+      : {
+          icon: "h-6 w-6",
+          text: "text-[21px] font-medium leading-none",
+          button: "gap-1.5 px-3 py-1",
+        };
 
   function handleClick(event: React.MouseEvent) {
     event.preventDefault();
@@ -53,7 +64,7 @@ export function UpvoteButton({
         disabled={!isAuthenticated || isPending}
         aria-pressed={upvoted}
         aria-label={upvoted ? "Remove upvote" : "Upvote question"}
-        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 transition-colors ${
+        className={`inline-flex items-center rounded-full transition-colors ${sizeStyles.button} ${
           upvoted
             ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
             : "text-current hover:bg-black/5 dark:hover:bg-white/10"
@@ -63,7 +74,7 @@ export function UpvoteButton({
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
-          className={iconSize}
+          className={sizeStyles.icon}
           aria-hidden="true"
         >
           <path
@@ -72,7 +83,7 @@ export function UpvoteButton({
             clipRule="evenodd"
           />
         </svg>
-        <span className={size === "sm" ? "text-xs font-medium" : "text-sm font-medium"}>
+        <span className={sizeStyles.text}>
           {upvotes.toLocaleString()}
         </span>
       </button>

@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { MobileViewport } from "@/components/layout/MobileViewport";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -27,11 +26,12 @@ export const metadata: Metadata = {
   },
 };
 
-/** Fit the layout to phone width; avoid desktop-style scaling on mobile browsers. */
+/** Native device width; keyboard overlays content without layout snap. */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  interactiveWidget: "overlays-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
@@ -49,7 +49,6 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-dvh flex-col font-sans">
-        <MobileViewport />
         <div id="app-shell" className="flex min-h-dvh flex-1 flex-col">
           {children}
         </div>

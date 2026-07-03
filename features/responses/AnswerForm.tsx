@@ -5,12 +5,15 @@ import type { Question } from "@/types";
 import { getSpeciesStyle } from "@/features/questions/species-styles";
 import { Spinner } from "@/components/ui/Spinner";
 import { submitResponse } from "@/features/responses/actions";
+import { AnswerChoiceSelect } from "@/features/responses/AnswerChoiceSelect";
 import {
   getAnswerChoices,
   getAnswerInputMode,
   getAnswerLabel,
   getAnswerPlaceholder,
   isNumericPredictionQuestion,
+  requiresReasoningForAnswer,
+  validateStructuredAnswer,
 } from "@/features/responses/answer-input";
 import {
   canSkipCrowdPrediction,
@@ -41,17 +44,19 @@ export function AnswerForm({ question }: AnswerFormProps) {
   const inputMode = getAnswerInputMode(question);
   const answerChoices = getAnswerChoices(question);
   const speciesStyle = getSpeciesStyle(question.species);
+  const reasoningRequired = requiresReasoningForAnswer(answer);
 
   function handleAnswerStep(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!answer.trim()) {
-      setError(
-        inputMode === "choice"
-          ? "Please select an answer."
-          : "Please enter an answer.",
-      );
+    const validationError = validateStructuredAnswer(
+      question,
+      answer,
+      reasoning,
+    );
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -76,6 +81,16 @@ export function AnswerForm({ question }: AnswerFormProps) {
 
   function submitFinal(requireCrowd = usesCrowdStep && !optionalCrowd) {
     startTransition(async () => {
+      const validationError = validateStructuredAnswer(
+        question,
+        answer,
+        reasoning,
+      );
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+
       const payload: Parameters<typeof submitResponse>[0] = {
         questionId: question.id,
         answerText: answer,
@@ -137,7 +152,7 @@ export function AnswerForm({ question }: AnswerFormProps) {
               value={crowdEstimate}
               onChange={(e) => setCrowdEstimate(e.target.value)}
               placeholder="e.g. 65"
-              className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 pr-10 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-500"
+              className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 pr-10 text-base outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-500"
             />
             <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-zinc-400">
               %
@@ -203,30 +218,24 @@ export function AnswerForm({ question }: AnswerFormProps) {
       </div>
 
       <div>
-        <p className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label
+          htmlFor="answer"
+          className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+        >
           {getAnswerLabel(question)}
-        </p>
-        {inputMode === "choice" ? (
-          <div className="flex flex-wrap gap-3" role="group" aria-label="Answer">
-            {answerChoices.map((choice) => {
-              const selected = answer === choice;
-              return (
-                <button
-                  key={choice}
-                  type="button"
-                  onClick={() => setAnswer(choice)}
-                  className={`min-w-[7rem] flex-1 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors ${
-                    selected
-                      ? speciesStyle.cta
-                      : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                  }`}
-                  aria-pressed={selected}
-                >
-                  {choice}
-                </button>
-              );
-            })}
-          </div>
+        </label>
+        {inputMode === "select" ? (
+          <>
+            <AnswerChoiceSelect
+              question={question}
+              value={answer}
+              choices={answerChoices}
+              onChange={setAnswer}
+            />
+            <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+              Choose one option — add your explanation below.
+            </p>
+          </>
         ) : inputMode === "number" ? (
           <input
             id="answer"
@@ -235,7 +244,7 @@ export function AnswerForm({ question }: AnswerFormProps) {
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder={getAnswerPlaceholder(question)}
-            className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-500"
+            className="w-full rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-base outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-500"
           />
         ) : (
           <textarea
@@ -245,7 +254,7 @@ export function AnswerForm({ question }: AnswerFormProps) {
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             placeholder={getAnswerPlaceholder(question)}
-            className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-500"
+            className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-base outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-500"
           />
         )}
       </div>
@@ -256,15 +265,18 @@ export function AnswerForm({ question }: AnswerFormProps) {
           className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
         >
           Why do you think that?{" "}
-          <span className="font-normal text-zinc-400">(optional)</span>
+          <span className="font-normal text-zinc-400">
+            {reasoningRequired ? "(required for Other)" : "(optional)"}
+          </span>
         </label>
         <textarea
           id="reasoning"
           rows={3}
+          required={reasoningRequired}
           value={reasoning}
           onChange={(e) => setReasoning(e.target.value)}
           placeholder="Explain your reasoning…"
-          className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-500"
+          className="w-full resize-none rounded-lg border border-zinc-200 bg-white px-4 py-2.5 text-base outline-none focus:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-zinc-500"
         />
       </div>
 

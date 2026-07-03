@@ -1,6 +1,6 @@
 import type { Response, Species } from "@/types";
 import { answersAgree } from "./comparison";
-import { isNumericPredictionQuestion } from "./prediction-format";
+import { isNumericStructuredQuestion } from "./structured-answer-format";
 
 /** Within this many percentage points counts as "agreeing" with a prediction answer. */
 const AGREEMENT_TOLERANCE = 10;
@@ -84,7 +84,7 @@ export function computePredictionAccuracy(
     species === "estimation" ||
     (species === "prediction" &&
       questionText &&
-      isNumericPredictionQuestion(questionText))
+      isNumericStructuredQuestion(species, questionText))
   ) {
     const numeric = computeActualAgreementPercent(
       userResponse.answer_text,

@@ -6,7 +6,7 @@ import type { Question, Species } from "@/types";
 import { sendPrivateMessage } from "@/features/messages/actions";
 import type { PrivateMessageView } from "@/features/messages/types";
 import { answersAgree } from "@/features/responses/comparison";
-import { isNumericPredictionQuestion } from "@/features/responses/prediction-format";
+import { isNumericStructuredQuestion } from "@/features/responses/structured-answer-format";
 import type { ResponseWithUser } from "@/features/responses/queries";
 import { formatPublicDisplayName } from "@/features/social/user-display";
 import type { ReactionType } from "./social-actions";
@@ -39,7 +39,7 @@ function displayName(response: ResponseWithUser): string {
 }
 
 function formatPredictionAnswer(text: string, questionText: string): string {
-  if (!isNumericPredictionQuestion(questionText)) return text;
+  if (!isNumericStructuredQuestion("prediction", questionText)) return text;
   const value = parseFloat(text.trim());
   if (Number.isNaN(value)) return text;
   return `${value}%`;
