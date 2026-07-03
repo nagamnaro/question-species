@@ -64,9 +64,6 @@ export function PredictionAccuracyCard({
       <h2 className={`text-sm font-semibold ${styles.title}`}>
         Crowd estimate vs reality
       </h2>
-      <p className="mt-0.5 text-xs opacity-80">
-        MVP plan: how well you predicted agreement with your answer
-      </p>
 
       <div className="mt-4 grid grid-cols-2 gap-4">
         <div>
